@@ -1,0 +1,5 @@
+This directory contains files associated with testing the Time Zone update feature.
+
+data/ - Test data files and scripts for generating that data.
+xts/  - Libraries to support automated testing of the Time Zone update feature.
+

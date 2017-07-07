@@ -16,5 +16,8 @@
  -->
 
 <resources>
-    <string name="app_name">Time Zone Data Demo App</string>
+    <!-- OEM-INSTRUCTION: Modify the name. This will appear in Settings / apps and app stores.
+         OEMs will usually want to provide translations too.
+      -->
+    <string name="app_name">OEM Corp Time Zone Data</string>
 </resources>

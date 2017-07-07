@@ -14,4 +14,13 @@
 
 LOCAL_PATH:= $(call my-dir)
 
-include $(call all-makefiles-under,$(LOCAL_PATH))
+# A testing support library for testing time zone updates on real devices.
+# OEMs can include this as a "_STATIC_" dependency and anything else needed to integrate with their
+# own test suite. At runtime the LOCAL_JAVA_LIBRARIES below (or a superset) must be present.
+
+include $(CLEAR_VARS)
+LOCAL_MODULE_TAGS := optional
+LOCAL_MODULE := time_zone_data_app_testing
+LOCAL_SRC_FILES := $(call all-java-files-under, src)
+LOCAL_JAVA_LIBRARIES := cts-tradefed tradefed compatibility-host-util
+include $(BUILD_HOST_JAVA_LIBRARY)
