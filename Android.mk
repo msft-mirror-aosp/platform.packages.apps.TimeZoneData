@@ -15,7 +15,7 @@
 
 LOCAL_PATH:= $(call my-dir)
 
-# A static library containing all the source needed by a TimeZoneDataApp.
+# A static library containing all the source needed by a Time Zone Data app.
 include $(CLEAR_VARS)
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := time_zone_distro_provider
@@ -24,25 +24,5 @@ LOCAL_SRC_FILES := $(call all-java-files-under, src/main)
 LOCAL_PROGUARD_FLAG_FILES := $(LOCAL_PATH)/proguard.cfg
 LOCAL_STATIC_JAVA_LIBRARIES := time_zone_distro
 include $(BUILD_STATIC_JAVA_LIBRARY)
-
-include $(CLEAR_VARS)
-LOCAL_MODULE_TAGS := optional
-LOCAL_PACKAGE_NAME := DemoTimeZoneDataApp
-LOCAL_MANIFEST_FILE := manifests/install/AndroidManifest.xml
-LOCAL_ASSET_DIR := system/timezone/output_data/distro
-LOCAL_AAPT_FLAGS := --version-code 10 --version-name system_image
-LOCAL_STATIC_JAVA_LIBRARIES := time_zone_distro_provider
-include $(BUILD_PACKAGE)
-
-include $(CLEAR_VARS)
-LOCAL_MODULE_TAGS := optional
-LOCAL_PACKAGE_NAME := DemoTimeZoneDataApp_data
-LOCAL_MANIFEST_FILE := manifests/install/AndroidManifest.xml
-LOCAL_ASSET_DIR := system/timezone/output_data/distro
-LOCAL_AAPT_FLAGS := --version-code 20 --version-name installable
-# Needed to ensure the .apk can be installed. Without it the .apk is missing a .dex.
-LOCAL_DEX_PREOPT := false
-LOCAL_STATIC_JAVA_LIBRARIES := time_zone_distro_provider
-include $(BUILD_PACKAGE)
 
 include $(call all-makefiles-under,$(LOCAL_PATH))

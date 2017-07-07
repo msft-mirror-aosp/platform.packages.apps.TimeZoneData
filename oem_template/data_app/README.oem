@@ -1,0 +1,14 @@
+This file originates from package/apps/TimeZoneData/oem_template/data_app.
+
+OEM-INSTRUCTION See below for the purpose of this directory and changes OEMs must make.
+
+This directory contains a suggested structure for building an OEM version of Time Zone Data app
+(real and test versions).
+
+e.g. You can copy it
+
+cp -r data_app ${ANDROID_BUILD_TOP}/vendor/oemcorp/apps/TimeZoneDataOemCorp
+
+Where <oemcorp> is your company name.
+
+...then read / change all the things marked with OEM-INSTRUCTION.
