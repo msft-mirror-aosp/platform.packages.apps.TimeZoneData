@@ -34,7 +34,6 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.ParcelFileDescriptor;
 import android.provider.TimeZoneRulesDataContract;
-import android.provider.TimeZoneRulesDataContract.Data;
 import android.provider.TimeZoneRulesDataContract.Operation;
 
 import java.io.File;
@@ -68,19 +67,19 @@ public final class TimeZoneRulesDataProvider extends ContentProvider {
 
     static {
         Set<String> columnNames = new HashSet<>();
-        columnNames.add(Operation.TYPE);
-        columnNames.add(Operation.DISTRO_MAJOR_VERSION);
-        columnNames.add(Operation.DISTRO_MINOR_VERSION);
-        columnNames.add(Operation.RULES_VERSION);
-        columnNames.add(Operation.REVISION);
+        columnNames.add(Operation.COLUMN_TYPE);
+        columnNames.add(Operation.COLUMN_DISTRO_MAJOR_VERSION);
+        columnNames.add(Operation.COLUMN_DISTRO_MINOR_VERSION);
+        columnNames.add(Operation.COLUMN_RULES_VERSION);
+        columnNames.add(Operation.COLUMN_REVISION);
         KNOWN_COLUMN_NAMES = Collections.unmodifiableSet(columnNames);
 
         Map<String, Class<?>> columnTypes = new HashMap<>();
-        columnTypes.put(Operation.TYPE, String.class);
-        columnTypes.put(Operation.DISTRO_MAJOR_VERSION, Integer.class);
-        columnTypes.put(Operation.DISTRO_MINOR_VERSION, Integer.class);
-        columnTypes.put(Operation.RULES_VERSION, String.class);
-        columnTypes.put(Operation.REVISION, Integer.class);
+        columnTypes.put(Operation.COLUMN_TYPE, String.class);
+        columnTypes.put(Operation.COLUMN_DISTRO_MAJOR_VERSION, Integer.class);
+        columnTypes.put(Operation.COLUMN_DISTRO_MINOR_VERSION, Integer.class);
+        columnTypes.put(Operation.COLUMN_RULES_VERSION, String.class);
+        columnTypes.put(Operation.COLUMN_REVISION, Integer.class);
         KNOWN_COLUMN_TYPES = Collections.unmodifiableMap(columnTypes);
     }
 
@@ -131,7 +130,7 @@ public final class TimeZoneRulesDataProvider extends ContentProvider {
         String type;
         try {
             type = getMandatoryMetaDataString(metaData, METADATA_KEY_OPERATION);
-            mColumnData.put(Operation.TYPE, type);
+            mColumnData.put(Operation.COLUMN_TYPE, type);
         } catch (IllegalArgumentException e) {
             throw new SecurityException(METADATA_KEY_OPERATION + " meta-data not set.");
         }
@@ -149,10 +148,12 @@ public final class TimeZoneRulesDataProvider extends ContentProvider {
             TimeZoneDistro distro = new TimeZoneDistro(distroBytesInputStream);
             try {
                 DistroVersion distroVersion = distro.getDistroVersion();
-                mColumnData.put(Operation.DISTRO_MAJOR_VERSION, distroVersion.formatMajorVersion);
-                mColumnData.put(Operation.DISTRO_MINOR_VERSION, distroVersion.formatMinorVersion);
-                mColumnData.put(Operation.RULES_VERSION, distroVersion.rulesVersion);
-                mColumnData.put(Operation.REVISION, distroVersion.revision);
+                mColumnData.put(Operation.COLUMN_DISTRO_MAJOR_VERSION,
+                        distroVersion.formatMajorVersion);
+                mColumnData.put(Operation.COLUMN_DISTRO_MINOR_VERSION,
+                        distroVersion.formatMinorVersion);
+                mColumnData.put(Operation.COLUMN_RULES_VERSION, distroVersion.rulesVersion);
+                mColumnData.put(Operation.COLUMN_REVISION, distroVersion.revision);
             } catch (IOException | DistroException e) {
                 throw new SecurityException("Invalid asset: " + TimeZoneDistro.FILE_NAME, e);
             }
@@ -250,7 +251,7 @@ public final class TimeZoneRulesDataProvider extends ContentProvider {
     @Override
     public ParcelFileDescriptor openFile(@NonNull Uri uri, @NonNull String mode)
             throws FileNotFoundException {
-        if (!Data.CONTENT_URI.equals(uri)) {
+        if (!Operation.CONTENT_URI.equals(uri)) {
             throw new FileNotFoundException("Unknown URI: " + uri);
         }
         if (!"r".equals(mode)) {
