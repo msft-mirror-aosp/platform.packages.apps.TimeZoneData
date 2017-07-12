@@ -12,6 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-LOCAL_PATH:= $(call my-dir)
+# Targets for creating the real signed versions of the time zone data app.
+
+LOCAL_PATH := $(call my-dir)
+
+OEM_APP_PATH := $(LOCAL_PATH)
+
+# Target to build the "real" time zone data app.
+include $(CLEAR_VARS)
+LOCAL_ASSET_DIR := system/timezone/output_data/distro
+TIME_ZONE_DATA_APP_SUFFIX :=
+
+# OEM-INSTRUCTION: OEMs should come up with a suitable versioning strategy.
+TIME_ZONE_DATA_APP_VERSION_CODE := 10
+TIME_ZONE_DATA_APP_VERSION_NAME := 10
+
+include $(OEM_APP_PATH)/build_oem_data_app.mk
 
 include $(call all-makefiles-under,$(LOCAL_PATH))
