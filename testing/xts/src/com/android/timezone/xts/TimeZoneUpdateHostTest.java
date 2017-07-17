@@ -62,6 +62,7 @@ public class TimeZoneUpdateHostTest extends DeviceTestCase {
     // These must match equivalent values in RulesManagerService dumpsys code.
     private static final String STAGED_OPERATION_NONE = "None";
     private static final String STAGED_OPERATION_INSTALL = "Install";
+    private static final String STAGED_OPERATION_UNINSTALL = "Uninstall";
     private static final String INSTALL_STATE_INSTALLED = "Installed";
 
     private static final int ALLOWED_BOOT_DELAY = 60000;
@@ -141,20 +142,13 @@ public class TimeZoneUpdateHostTest extends DeviceTestCase {
         assertTrue(getTimeZoneDataPackageName() + " not installed",
                 isPackageInstalled(getTimeZoneDataPackageName()));
 
-        // "1" below is the revision: we assume the device ships with revision 1 and that the
-        // /priv-app data matches the system image files.
-        String expectedSystemVersion = getSystemRulesVersion() + ",1";
-
+        // Reboot as needed to apply any staged operation.
         if (!STAGED_OPERATION_NONE.equals(getStagedOperationType())) {
             rebootDeviceAndWaitForRestart();
         }
 
-        // A "clean" device can mean no time zone data .apk installed (completely clean) or one
-        // where the /system/priv-app version of the time zone data .apk has been installed. What we
-        // want is to ensure that any previous test run didn't leave a test .apk installed.
-        // The easiest way to do that is to attempt to uninstall the time zone data app and reboot
-        // if we were able to uninstall.
-
+        // A "clean" device means no time zone data .apk installed in /data at all, try to get to
+        // that state.
         for (int i = 0; i < 2; i++) {
             logDeviceTimeZoneState();
 
@@ -167,13 +161,16 @@ public class TimeZoneUpdateHostTest extends DeviceTestCase {
             // for the device to react to the uninstall and reboot. If the time zone update system
             // is not configured correctly this is likely to be where tests fail.
 
-            // We expect the device to get to the state "INSTALL", meaning it will try to install
-            // the system version of the time zone rules on next boot.
-            waitForStagedStatus(STAGED_OPERATION_INSTALL, expectedSystemVersion);
+            // If the package we uninstalled was not valid then there would be nothing installed and
+            // so nothing will be staged by the uninstall. Check and do what it takes to get the
+            // device to having nothing installed again.
+            if (INSTALL_STATE_INSTALLED.equals(getCurrentInstallState())) {
+                // We expect the device to get to the staged state "UNINSTALL", meaning it will try
+                // to revert to no distro installed on next boot.
+                waitForStagedUninstall();
 
-            rebootDeviceAndWaitForRestart();
-
-            assertEquals(expectedSystemVersion, getCurrentInstalledVersion());
+                rebootDeviceAndWaitForRestart();
+            }
         }
         assertActiveRulesVersion(getSystemRulesVersion());
         assertEquals(STAGED_OPERATION_NONE, getStagedOperationType());
@@ -191,7 +188,7 @@ public class TimeZoneUpdateHostTest extends DeviceTestCase {
         File appFile = getTimeZoneDataApkFile("test1");
         installLocalPackageFile(appFile.getAbsolutePath(), "-r");
 
-        waitForStagedStatus(STAGED_OPERATION_INSTALL, test1VersionInfo);
+        waitForStagedInstall(test1VersionInfo);
 
         // Confirm the install state hasn't changed.
         assertFalse(test1VersionInfo.equals(getCurrentInstalledVersion()));
@@ -292,13 +289,25 @@ public class TimeZoneUpdateHostTest extends DeviceTestCase {
         return getDeviceTimeZoneState(stateType);
     }
 
-    private void waitForStagedStatus(String requiredStatus, String versionString) throws Exception {
-        waitForCondition(() -> isStagedStatus(requiredStatus, versionString));
+    private void waitForStagedUninstall() throws Exception {
+        waitForCondition(() -> isStagedUninstall());
     }
 
-    private boolean isStagedStatus(String requiredStatus, String versionString) {
+    private void waitForStagedInstall(String versionString) throws Exception {
+        waitForCondition(() -> isStagedInstall(versionString));
+    }
+
+    private boolean isStagedUninstall() {
         try {
-            return getStagedOperationType().equals(requiredStatus)
+            return getStagedOperationType().equals(STAGED_OPERATION_UNINSTALL);
+        } catch (Exception e) {
+            throw new AssertionError("Failed to read staged status", e);
+        }
+    }
+
+    private boolean isStagedInstall(String versionString) {
+        try {
+            return getStagedOperationType().equals(STAGED_OPERATION_INSTALL)
                     && getStagedInstallVersion().equals(versionString);
         } catch (Exception e) {
             throw new AssertionError("Failed to read staged status", e);
