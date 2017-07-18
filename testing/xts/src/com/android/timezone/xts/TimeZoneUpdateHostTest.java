@@ -15,15 +15,15 @@
  */
 package com.android.timezone.xts;
 
+import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
+import com.android.tradefed.build.IBuildInfo;
 import com.android.tradefed.config.Option;
 import com.android.tradefed.log.LogUtil;
 import com.android.tradefed.testtype.DeviceTestCase;
+import com.android.tradefed.testtype.IBuildReceiver;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -57,25 +57,27 @@ import java.util.function.BooleanSupplier;
  *
  */
 // TODO(nfuller): Switch this to JUnit4 when HostTest supports @Option with JUnit4.
-public class TimeZoneUpdateHostTest extends DeviceTestCase {
+public class TimeZoneUpdateHostTest extends DeviceTestCase implements IBuildReceiver {
 
     // These must match equivalent values in RulesManagerService dumpsys code.
     private static final String STAGED_OPERATION_NONE = "None";
     private static final String STAGED_OPERATION_INSTALL = "Install";
+    private static final String STAGED_OPERATION_UNINSTALL = "Uninstall";
     private static final String INSTALL_STATE_INSTALLED = "Installed";
 
     private static final int ALLOWED_BOOT_DELAY = 60000;
 
-    private File tempDir;
+    private IBuildInfo mBuildInfo;
+    private File mTempDir;
 
     @Option(name = "oem-data-app-package-name",
             description="The OEM-specific package name for the data app",
             mandatory = true)
-    private String oemDataAppPackageName;
+    private String mOemDataAppPackageName;
 
     private String getTimeZoneDataPackageName() {
-        assertNotNull(oemDataAppPackageName);
-        return oemDataAppPackageName;
+        assertNotNull(mOemDataAppPackageName);
+        return mOemDataAppPackageName;
     }
 
     @Option(name = "oem-data-app-apk-prefix",
@@ -83,11 +85,16 @@ public class TimeZoneUpdateHostTest extends DeviceTestCase {
                     + "for TimeZoneDataOemCorp_test1.apk the prefix would be"
                     + "\"TimeZoneDataOemCorp\"",
             mandatory = true)
-    private String oemDataAppApkPrefix;
+    private String mOemDataAppApkPrefix;
 
-    private String getTimeZoneDataApkResourceName(String testId) {
-        assertNotNull(oemDataAppApkPrefix);
-        return "/" + oemDataAppApkPrefix + "_" + testId + ".apk";
+    private String getTimeZoneDataApkName(String testId) {
+        assertNotNull(mOemDataAppApkPrefix);
+        return mOemDataAppApkPrefix + "_" + testId + ".apk";
+    }
+
+    @Override
+    public void setBuild(IBuildInfo buildInfo) {
+        mBuildInfo = buildInfo;
     }
 
     @Override
@@ -106,14 +113,14 @@ public class TimeZoneUpdateHostTest extends DeviceTestCase {
 
     // @Before
     public void createTempDir() throws Exception {
-        tempDir = File.createTempFile("timeZoneUpdateTest", null);
-        assertTrue(tempDir.delete());
-        assertTrue(tempDir.mkdir());
+        mTempDir = File.createTempFile("timeZoneUpdateTest", null);
+        assertTrue(mTempDir.delete());
+        assertTrue(mTempDir.mkdir());
     }
 
     // @After
     public void deleteTempDir() throws Exception {
-        Files.walkFileTree(tempDir.toPath(), new SimpleFileVisitor<Path>() {
+        Files.walkFileTree(mTempDir.toPath(), new SimpleFileVisitor<Path>() {
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
                     throws IOException {
@@ -141,20 +148,13 @@ public class TimeZoneUpdateHostTest extends DeviceTestCase {
         assertTrue(getTimeZoneDataPackageName() + " not installed",
                 isPackageInstalled(getTimeZoneDataPackageName()));
 
-        // "1" below is the revision: we assume the device ships with revision 1 and that the
-        // /priv-app data matches the system image files.
-        String expectedSystemVersion = getSystemRulesVersion() + ",1";
-
+        // Reboot as needed to apply any staged operation.
         if (!STAGED_OPERATION_NONE.equals(getStagedOperationType())) {
             rebootDeviceAndWaitForRestart();
         }
 
-        // A "clean" device can mean no time zone data .apk installed (completely clean) or one
-        // where the /system/priv-app version of the time zone data .apk has been installed. What we
-        // want is to ensure that any previous test run didn't leave a test .apk installed.
-        // The easiest way to do that is to attempt to uninstall the time zone data app and reboot
-        // if we were able to uninstall.
-
+        // A "clean" device means no time zone data .apk installed in /data at all, try to get to
+        // that state.
         for (int i = 0; i < 2; i++) {
             logDeviceTimeZoneState();
 
@@ -167,13 +167,16 @@ public class TimeZoneUpdateHostTest extends DeviceTestCase {
             // for the device to react to the uninstall and reboot. If the time zone update system
             // is not configured correctly this is likely to be where tests fail.
 
-            // We expect the device to get to the state "INSTALL", meaning it will try to install
-            // the system version of the time zone rules on next boot.
-            waitForStagedStatus(STAGED_OPERATION_INSTALL, expectedSystemVersion);
+            // If the package we uninstalled was not valid then there would be nothing installed and
+            // so nothing will be staged by the uninstall. Check and do what it takes to get the
+            // device to having nothing installed again.
+            if (INSTALL_STATE_INSTALLED.equals(getCurrentInstallState())) {
+                // We expect the device to get to the staged state "UNINSTALL", meaning it will try
+                // to revert to no distro installed on next boot.
+                waitForStagedUninstall();
 
-            rebootDeviceAndWaitForRestart();
-
-            assertEquals(expectedSystemVersion, getCurrentInstalledVersion());
+                rebootDeviceAndWaitForRestart();
+            }
         }
         assertActiveRulesVersion(getSystemRulesVersion());
         assertEquals(STAGED_OPERATION_NONE, getStagedOperationType());
@@ -191,7 +194,7 @@ public class TimeZoneUpdateHostTest extends DeviceTestCase {
         File appFile = getTimeZoneDataApkFile("test1");
         installLocalPackageFile(appFile.getAbsolutePath(), "-r");
 
-        waitForStagedStatus(STAGED_OPERATION_INSTALL, test1VersionInfo);
+        waitForStagedInstall(test1VersionInfo);
 
         // Confirm the install state hasn't changed.
         assertFalse(test1VersionInfo.equals(getCurrentInstalledVersion()));
@@ -292,13 +295,25 @@ public class TimeZoneUpdateHostTest extends DeviceTestCase {
         return getDeviceTimeZoneState(stateType);
     }
 
-    private void waitForStagedStatus(String requiredStatus, String versionString) throws Exception {
-        waitForCondition(() -> isStagedStatus(requiredStatus, versionString));
+    private void waitForStagedUninstall() throws Exception {
+        waitForCondition(() -> isStagedUninstall());
     }
 
-    private boolean isStagedStatus(String requiredStatus, String versionString) {
+    private void waitForStagedInstall(String versionString) throws Exception {
+        waitForCondition(() -> isStagedInstall(versionString));
+    }
+
+    private boolean isStagedUninstall() {
         try {
-            return getStagedOperationType().equals(requiredStatus)
+            return getStagedOperationType().equals(STAGED_OPERATION_UNINSTALL);
+        } catch (Exception e) {
+            throw new AssertionError("Failed to read staged status", e);
+        }
+    }
+
+    private boolean isStagedInstall(String versionString) {
+        try {
+            return getStagedOperationType().equals(STAGED_OPERATION_INSTALL)
                     && getStagedInstallVersion().equals(versionString);
         } catch (Exception e) {
             throw new AssertionError("Failed to read staged status", e);
@@ -361,31 +376,11 @@ public class TimeZoneUpdateHostTest extends DeviceTestCase {
     }
 
     private File getTimeZoneDataApkFile(String testId) throws Exception {
-        String resourceName = getTimeZoneDataApkResourceName(testId);
-        return extractResourceToFile(resourceName);
-    }
+        CompatibilityBuildHelper buildHelper = new CompatibilityBuildHelper(mBuildInfo);
+        String fileName = getTimeZoneDataApkName(testId);
 
-    private File extractResourceToFile(String resourceName) throws Exception {
-        File tempFile = File.createTempFile("temp", ".apk", tempDir);
-        try (InputStream is = getClass().getResourceAsStream(resourceName);
-             FileOutputStream os = new FileOutputStream(tempFile)) {
-            if (is == null) {
-                fail("No resource found with name " + resourceName);
-            }
-            copy(is, os);
-        }
-        return tempFile;
-    }
-
-    /**
-     * Copies all of the bytes from {@code in} to {@code out}. Neither stream is closed.
-     */
-    private static void copy(InputStream in, OutputStream out) throws IOException {
-        byte[] buffer = new byte[8192];
-        int c;
-        while ((c = in.read(buffer)) != -1) {
-            out.write(buffer, 0, c);
-        }
+        // TODO(nfuller): Replace with getTestFile(fileName) when it's available in aosp/master.
+        return new File(buildHelper.getTestsDir(), fileName);
     }
 
     private boolean isPackageInstalled(String pkg) throws Exception {

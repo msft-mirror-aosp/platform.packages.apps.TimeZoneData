@@ -20,8 +20,9 @@
 #       contains the app res/ dir.
 #   TIME_ZONE_DATA_APP_SUFFIX - the suffix to apply to the package name. Can be
 #       empty, or contain things like _test1 for test .apk files.
-#   TIME_ZONE_DATA_APP_VERSION_CODE - the version code for the .apk
-#   TIME_ZONE_DATA_APP_VERSION_NAME - the version name for the .apk
+#   TIME_ZONE_DATA_APP_VERSION_CODE - the version code for the .apk.
+#   TIME_ZONE_DATA_APP_VERSION_NAME - the version name for the .apk.
+#   LOCAL_COMPATIBILITY_SUITE - if the package is to be included in xTS tests.
 #
 LOCAL_MODULE_TAGS := optional
 
@@ -36,7 +37,8 @@ LOCAL_FULL_MANIFEST_FILE := packages/apps/TimeZoneData/manifests/install/Android
 LOCAL_PACKAGE_NAME := TimeZoneData$(TIME_ZONE_DATA_APP_SUFFIX)
 
 LOCAL_AAPT_FLAGS := --version-code $(TIME_ZONE_DATA_APP_VERSION_CODE) \
-                    --version-name $(TIME_ZONE_DATA_APP_VERSION_NAME)
+                    --version-name $(TIME_ZONE_DATA_APP_VERSION_NAME) \
+                    --min-sdk-version $(PLATFORM_SDK_VERSION)
 
 # OEM-INSTRUCTION: Modify the name, s/oemcorp/<Your company name>/
 LOCAL_AAPT_FLAGS += --rename-manifest-package com.oemcorp.android.timezone.data
@@ -48,5 +50,6 @@ LOCAL_PRIVILEGED_MODULE := true
 # OEM-INSTRUCTION: Configure your own certificate.
 LOCAL_CERTIFICATE :=
 
-include $(BUILD_PACKAGE)
-
+# If LOCAL_COMPATIBILITY_SUITE is unset this is the same as BUILD_PACKAGE so
+# can be used for building test or production packages.
+include $(BUILD_CTS_PACKAGE)

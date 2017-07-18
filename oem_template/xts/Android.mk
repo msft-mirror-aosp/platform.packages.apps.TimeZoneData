@@ -26,11 +26,4 @@ LOCAL_MODULE := XtsTimeZoneTestCases
 
 LOCAL_STATIC_JAVA_LIBRARIES := time_zone_data_app_testing
 
-# Embed the .apk files needed by the tests as resources.
-EMBED_APK_MODULE_NAME := TimeZoneData_test1
-include $(LOCAL_PATH)/embed_apk_as_resource.mk
-
-EMBED_APK_MODULE_NAME := TimeZoneData_test2
-include $(LOCAL_PATH)/embed_apk_as_resource.mk
-
 include $(BUILD_HOST_JAVA_LIBRARY)
