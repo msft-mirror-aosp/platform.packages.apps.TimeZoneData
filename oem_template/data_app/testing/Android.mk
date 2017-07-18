@@ -17,9 +17,6 @@
 
 LOCAL_PATH := $(call my-dir)
 
-# The location of the "real" app.
-OEM_APP_PATH := $(LOCAL_PATH)/..
-
 # Paths used to find files shared with AOSP.
 aosp_test_data_path := packages/apps/TimeZoneData/testing/data
 
@@ -36,7 +33,8 @@ TIME_ZONE_DATA_APP_VERSION_NAME := test1
 # When built, explicitly put it in the data partition since this is for tests, not the system image.
 LOCAL_MODULE_PATH := $(TARGET_OUT_DATA_APPS)
 
-include $(OEM_APP_PATH)/build_oem_data_app.mk
+include $(LOCAL_PATH)/build_oem_test_data_app.mk
+
 
 # Target to build the "test 2" time zone data app.
 include $(CLEAR_VARS)
@@ -51,7 +49,7 @@ TIME_ZONE_DATA_APP_VERSION_NAME := test2
 # When built, explicitly put it in the data partition since this is for tests, not the system image.
 LOCAL_MODULE_PATH := $(TARGET_OUT_DATA_APPS)
 
-include $(OEM_APP_PATH)/build_oem_data_app.mk
+include $(LOCAL_PATH)/build_oem_test_data_app.mk
 
 # Tidy up variables.
 aosp_test_data_path :=
