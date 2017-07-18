@@ -37,7 +37,8 @@ LOCAL_FULL_MANIFEST_FILE := packages/apps/TimeZoneData/manifests/install/Android
 LOCAL_PACKAGE_NAME := TimeZoneData$(TIME_ZONE_DATA_APP_SUFFIX)
 
 LOCAL_AAPT_FLAGS := --version-code $(TIME_ZONE_DATA_APP_VERSION_CODE) \
-                    --version-name $(TIME_ZONE_DATA_APP_VERSION_NAME)
+                    --version-name $(TIME_ZONE_DATA_APP_VERSION_NAME) \
+                    --min-sdk-version $(PLATFORM_SDK_VERSION)
 
 # OEM-INSTRUCTION: Modify the name, s/oemcorp/<Your company name>/
 LOCAL_AAPT_FLAGS += --rename-manifest-package com.oemcorp.android.timezone.data
