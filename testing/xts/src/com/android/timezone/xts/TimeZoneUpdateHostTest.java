@@ -15,15 +15,15 @@
  */
 package com.android.timezone.xts;
 
+import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
+import com.android.tradefed.build.IBuildInfo;
 import com.android.tradefed.config.Option;
 import com.android.tradefed.log.LogUtil;
 import com.android.tradefed.testtype.DeviceTestCase;
+import com.android.tradefed.testtype.IBuildReceiver;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -57,7 +57,7 @@ import java.util.function.BooleanSupplier;
  *
  */
 // TODO(nfuller): Switch this to JUnit4 when HostTest supports @Option with JUnit4.
-public class TimeZoneUpdateHostTest extends DeviceTestCase {
+public class TimeZoneUpdateHostTest extends DeviceTestCase implements IBuildReceiver {
 
     // These must match equivalent values in RulesManagerService dumpsys code.
     private static final String STAGED_OPERATION_NONE = "None";
@@ -67,16 +67,17 @@ public class TimeZoneUpdateHostTest extends DeviceTestCase {
 
     private static final int ALLOWED_BOOT_DELAY = 60000;
 
-    private File tempDir;
+    private IBuildInfo mBuildInfo;
+    private File mTempDir;
 
     @Option(name = "oem-data-app-package-name",
             description="The OEM-specific package name for the data app",
             mandatory = true)
-    private String oemDataAppPackageName;
+    private String mOemDataAppPackageName;
 
     private String getTimeZoneDataPackageName() {
-        assertNotNull(oemDataAppPackageName);
-        return oemDataAppPackageName;
+        assertNotNull(mOemDataAppPackageName);
+        return mOemDataAppPackageName;
     }
 
     @Option(name = "oem-data-app-apk-prefix",
@@ -84,11 +85,16 @@ public class TimeZoneUpdateHostTest extends DeviceTestCase {
                     + "for TimeZoneDataOemCorp_test1.apk the prefix would be"
                     + "\"TimeZoneDataOemCorp\"",
             mandatory = true)
-    private String oemDataAppApkPrefix;
+    private String mOemDataAppApkPrefix;
 
-    private String getTimeZoneDataApkResourceName(String testId) {
-        assertNotNull(oemDataAppApkPrefix);
-        return "/" + oemDataAppApkPrefix + "_" + testId + ".apk";
+    private String getTimeZoneDataApkName(String testId) {
+        assertNotNull(mOemDataAppApkPrefix);
+        return mOemDataAppApkPrefix + "_" + testId + ".apk";
+    }
+
+    @Override
+    public void setBuild(IBuildInfo buildInfo) {
+        mBuildInfo = buildInfo;
     }
 
     @Override
@@ -107,14 +113,14 @@ public class TimeZoneUpdateHostTest extends DeviceTestCase {
 
     // @Before
     public void createTempDir() throws Exception {
-        tempDir = File.createTempFile("timeZoneUpdateTest", null);
-        assertTrue(tempDir.delete());
-        assertTrue(tempDir.mkdir());
+        mTempDir = File.createTempFile("timeZoneUpdateTest", null);
+        assertTrue(mTempDir.delete());
+        assertTrue(mTempDir.mkdir());
     }
 
     // @After
     public void deleteTempDir() throws Exception {
-        Files.walkFileTree(tempDir.toPath(), new SimpleFileVisitor<Path>() {
+        Files.walkFileTree(mTempDir.toPath(), new SimpleFileVisitor<Path>() {
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
                     throws IOException {
@@ -370,31 +376,11 @@ public class TimeZoneUpdateHostTest extends DeviceTestCase {
     }
 
     private File getTimeZoneDataApkFile(String testId) throws Exception {
-        String resourceName = getTimeZoneDataApkResourceName(testId);
-        return extractResourceToFile(resourceName);
-    }
+        CompatibilityBuildHelper buildHelper = new CompatibilityBuildHelper(mBuildInfo);
+        String fileName = getTimeZoneDataApkName(testId);
 
-    private File extractResourceToFile(String resourceName) throws Exception {
-        File tempFile = File.createTempFile("temp", ".apk", tempDir);
-        try (InputStream is = getClass().getResourceAsStream(resourceName);
-             FileOutputStream os = new FileOutputStream(tempFile)) {
-            if (is == null) {
-                fail("No resource found with name " + resourceName);
-            }
-            copy(is, os);
-        }
-        return tempFile;
-    }
-
-    /**
-     * Copies all of the bytes from {@code in} to {@code out}. Neither stream is closed.
-     */
-    private static void copy(InputStream in, OutputStream out) throws IOException {
-        byte[] buffer = new byte[8192];
-        int c;
-        while ((c = in.read(buffer)) != -1) {
-            out.write(buffer, 0, c);
-        }
+        // TODO(nfuller): Replace with getTestFile(fileName) when it's available in aosp/master.
+        return new File(buildHelper.getTestsDir(), fileName);
     }
 
     private boolean isPackageInstalled(String pkg) throws Exception {
