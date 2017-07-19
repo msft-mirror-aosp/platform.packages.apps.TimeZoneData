@@ -18,7 +18,7 @@
 LOCAL_PATH := $(call my-dir)
 
 # Paths used to find files shared with AOSP.
-aosp_test_data_path := packages/apps/TimeZoneData/testing/data
+aosp_test_data_path := system/timezone/testing/data
 
 # Target to build the "test 1" time zone data app.
 include $(CLEAR_VARS)
