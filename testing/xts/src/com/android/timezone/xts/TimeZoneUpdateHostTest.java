@@ -322,10 +322,13 @@ public class TimeZoneUpdateHostTest extends DeviceTestCase implements IBuildRece
 
     private static void waitForCondition(BooleanSupplier condition) throws Exception {
         int count = 0;
-        while (count++ < 30 && !condition.getAsBoolean()) {
+        boolean lastResult;
+        while (!(lastResult = condition.getAsBoolean()) && count++ < 30) {
             Thread.sleep(1000);
         }
-        assertTrue("Failed condition: " + condition, condition.getAsBoolean());
+        // Some conditions may not be stable so using the lastResult instead of
+        // condition.getAsBoolean() ensures we understand why we exited the loop.
+        assertTrue("Failed condition: " + condition, lastResult);
     }
 
     private enum StateType {
