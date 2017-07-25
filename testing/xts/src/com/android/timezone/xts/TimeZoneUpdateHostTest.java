@@ -21,17 +21,9 @@ import com.android.tradefed.config.Option;
 import com.android.tradefed.log.LogUtil;
 import com.android.tradefed.testtype.DeviceTestCase;
 import com.android.tradefed.testtype.IBuildReceiver;
+import com.android.tradefed.util.FileUtil;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.function.BooleanSupplier;
 
 /**
@@ -64,8 +56,6 @@ public class TimeZoneUpdateHostTest extends DeviceTestCase implements IBuildRece
     private static final String STAGED_OPERATION_INSTALL = "Install";
     private static final String STAGED_OPERATION_UNINSTALL = "Uninstall";
     private static final String INSTALL_STATE_INSTALLED = "Installed";
-
-    private static final int ALLOWED_BOOT_DELAY = 60000;
 
     private IBuildInfo mBuildInfo;
     private File mTempDir;
@@ -120,21 +110,7 @@ public class TimeZoneUpdateHostTest extends DeviceTestCase implements IBuildRece
 
     // @After
     public void deleteTempDir() throws Exception {
-        Files.walkFileTree(mTempDir.toPath(), new SimpleFileVisitor<Path>() {
-            @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
-                    throws IOException {
-                Files.delete(file);
-                return FileVisitResult.CONTINUE;
-            }
-
-            @Override
-            public FileVisitResult postVisitDirectory(Path dir, IOException exc)
-                    throws IOException {
-                Files.delete(dir);
-                return FileVisitResult.CONTINUE;
-            }
-        });
+        FileUtil.recursiveDelete(mTempDir);
     }
 
     /**
@@ -192,7 +168,7 @@ public class TimeZoneUpdateHostTest extends DeviceTestCase implements IBuildRece
         assertEquals(STAGED_OPERATION_NONE, getStagedOperationType());
 
         File appFile = getTimeZoneDataApkFile("test1");
-        installLocalPackageFile(appFile.getAbsolutePath(), "-r");
+        getDevice().installPackage(appFile, true /* reinstall */);
 
         waitForStagedInstall(test1VersionInfo);
 
@@ -211,7 +187,7 @@ public class TimeZoneUpdateHostTest extends DeviceTestCase implements IBuildRece
     // @Test
     public void testInstallOlderRulesVersion() throws Exception {
         File appFile = getTimeZoneDataApkFile("test2");
-        installLocalPackageFile(appFile.getAbsolutePath(), "-r");
+        getDevice().installPackage(appFile, true /* reinstall */);
 
         // The attempt to install a version of the data that is older than the version in the system
         // image should be rejected and nothing should be staged. There's currently no way (short of
@@ -224,23 +200,9 @@ public class TimeZoneUpdateHostTest extends DeviceTestCase implements IBuildRece
         assertEquals(STAGED_OPERATION_NONE, getStagedOperationType());
     }
 
-    private void installLocalPackageFile(String hostApkPath, String... args) throws Exception {
-        List<String> command = new ArrayList<>();
-        command.add("install");
-        if (args.length > 0) {
-            Collections.addAll(command, args);
-        }
-        command.add(hostApkPath);
-
-        // Use of "adb install" here rather than installPackage() (which uses adb shell pm) because
-        // the latter needs the file on device while "adb install" handles that for us.
-        getDevice().executeAdbCommand(command.toArray(new String[0]));
-    }
-
     private void rebootDeviceAndWaitForRestart() throws Exception {
         log("Rebooting device");
-        getDevice().rebootUntilOnline();
-        assertTrue(getDevice().waitForBootComplete(ALLOWED_BOOT_DELAY));
+        getDevice().reboot();
     }
 
     private void logDeviceTimeZoneState() throws Exception {
@@ -364,8 +326,8 @@ public class TimeZoneUpdateHostTest extends DeviceTestCase implements IBuildRece
     }
 
     private String getDeviceTimeZoneState(StateType stateType) throws Exception {
-        String output = getDevice().executeAdbCommand(
-                "shell", "dumpsys", "timezone", "-format_state", stateType.getFormatStateChar());
+        String output = getDevice().executeShellCommand(
+                "dumpsys timezone -format_state " + stateType.getFormatStateChar());
         assertNotNull(output);
         // Output will be "Foo: bar\n". We want the "bar".
         String value = output.split(":")[1];
@@ -373,7 +335,7 @@ public class TimeZoneUpdateHostTest extends DeviceTestCase implements IBuildRece
     }
 
     private String dumpEntireTimeZoneStatusToString() throws Exception {
-        String output = getDevice().executeAdbCommand("shell", "dumpsys", "timezone");
+        String output = getDevice().executeShellCommand("dumpsys timezone");
         assertNotNull(output);
         return output;
     }
