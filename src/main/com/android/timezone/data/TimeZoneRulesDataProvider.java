@@ -20,8 +20,6 @@ import com.android.timezone.distro.DistroException;
 import com.android.timezone.distro.DistroVersion;
 import com.android.timezone.distro.TimeZoneDistro;
 
-import android.annotation.NonNull;
-import android.annotation.Nullable;
 import android.content.ContentProvider;
 import android.content.ContentValues;
 import android.content.Context;
@@ -35,6 +33,8 @@ import android.os.Bundle;
 import android.os.ParcelFileDescriptor;
 import android.provider.TimeZoneRulesDataContract;
 import android.provider.TimeZoneRulesDataContract.Operation;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -111,10 +111,10 @@ public final class TimeZoneRulesDataProvider extends ContentProvider {
             // Use readPermission only to implement permissions.
             throw new SecurityException("Use android:readPermission only");
         }
-        if (!android.Manifest.permission.UPDATE_TIME_ZONE_RULES.equals(info.readPermission)) {
+        if (!TimeZoneRulesDataContract.READER_PERMISSION.equals(info.readPermission)) {
             // Writing is not supported.
             throw new SecurityException("android:readPermission must be set to \""
-                    + android.Manifest.permission.UPDATE_TIME_ZONE_RULES
+                    + TimeZoneRulesDataContract.READER_PERMISSION
                     + "\" is: " + info.readPermission);
         }
 
