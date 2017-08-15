@@ -111,10 +111,10 @@ public final class TimeZoneRulesDataProvider extends ContentProvider {
             // Use readPermission only to implement permissions.
             throw new SecurityException("Use android:readPermission only");
         }
-        if (!TimeZoneRulesDataContract.READER_PERMISSION.equals(info.readPermission)) {
+        if (!android.Manifest.permission.UPDATE_TIME_ZONE_RULES.equals(info.readPermission)) {
             // Writing is not supported.
             throw new SecurityException("android:readPermission must be set to \""
-                    + TimeZoneRulesDataContract.READER_PERMISSION
+                    + android.Manifest.permission.UPDATE_TIME_ZONE_RULES
                     + "\" is: " + info.readPermission);
         }
 
