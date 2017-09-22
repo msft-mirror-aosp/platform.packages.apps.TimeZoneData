@@ -18,6 +18,7 @@ package com.android.timezone.xts;
 import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
 import com.android.tradefed.build.IBuildInfo;
 import com.android.tradefed.config.Option;
+import com.android.tradefed.device.ITestDevice;
 import com.android.tradefed.log.LogUtil;
 import com.android.tradefed.testtype.DeviceTestCase;
 import com.android.tradefed.testtype.IBuildReceiver;
@@ -183,6 +184,48 @@ public class TimeZoneUpdateHostTest extends DeviceTestCase implements IBuildRece
         assertEquals(STAGED_OPERATION_NONE, getStagedOperationType());
         assertEquals(INSTALL_STATE_INSTALLED, getCurrentInstallState());
         assertEquals(test1VersionInfo, getCurrentInstalledVersion());
+    }
+
+    // @Test
+    public void testInstallNewerRulesVersion_secondaryUser() throws Exception {
+        ITestDevice device = getDevice();
+        if (!device.isMultiUserSupported()) {
+            // Just pass on non-multi-user devices.
+            return;
+        }
+
+        int userId = device.createUser("TimeZoneTest", false /* guest */, false /* ephemeral */);
+        try {
+
+            // This information must match the rules version in test1: IANA version=2030a, revision=1
+            String test1VersionInfo = "2030a,1";
+
+            // Confirm the staged / install state before we start.
+            assertFalse(test1VersionInfo.equals(getCurrentInstalledVersion()));
+            assertEquals(STAGED_OPERATION_NONE, getStagedOperationType());
+
+            File appFile = getTimeZoneDataApkFile("test1");
+
+            // Install the app for the test user. It should still all work.
+            device.installPackageForUser(appFile, true /* reinstall */, userId);
+
+            waitForStagedInstall(test1VersionInfo);
+
+            // Confirm the install state hasn't changed.
+            assertFalse(test1VersionInfo.equals(getCurrentInstalledVersion()));
+
+            // Now reboot, and the staged version should become the installed version.
+            rebootDeviceAndWaitForRestart();
+
+            // After reboot, check the state.
+            assertEquals(STAGED_OPERATION_NONE, getStagedOperationType());
+            assertEquals(INSTALL_STATE_INSTALLED, getCurrentInstallState());
+            assertEquals(test1VersionInfo, getCurrentInstalledVersion());
+        }
+        finally {
+            // If this fails, the device may be left in a bad state.
+            device.removeUser(userId);
+        }
     }
 
     // @Test
