@@ -11,16 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
-# An .mk include file that contains the boilerplate needed to build test,
-# OEM-specific Time Zone Data apps.
-#
-# Users should set:
-#   TIME_ZONE_DATA_APP_SUFFIX - the suffix to apply to the package name.
-#       Should contain things like _test1 for test .apk files.
-#   TIME_ZONE_DATA_APP_VERSION_CODE - the version code for the .apk.
-#   TIME_ZONE_DATA_APP_VERSION_NAME - the version name for the .apk.
-#
 
-OEM_APP_PATH := $(LOCAL_PATH)/..
-include $(OEM_APP_PATH)/build_oem_data_app.mk
+# Targets for including the real signed versions of the time zone data app.
+
+LOCAL_PATH := $(call my-dir)
+
+# Defines the TimeZoneDataPrebuilt prebuilt target.
+include $(CLEAR_VARS)
+TIME_ZONE_DATA_APP_SUFFIX :=
+include $(LOCAL_PATH)/include_app_prebuilt.mk
+
+include $(call all-makefiles-under,$(LOCAL_PATH))
