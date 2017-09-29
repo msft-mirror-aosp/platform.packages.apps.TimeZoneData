@@ -12,15 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# An .mk include file that contains the boilerplate needed to build test,
-# OEM-specific Time Zone Data apps.
+# An .mk include file that contains the boilerplate needed to include test,
+# OEM-specific Time Zone Data app prebuilts.
 #
 # Users should set:
 #   TIME_ZONE_DATA_APP_SUFFIX - the suffix to apply to the package name.
 #       Should contain things like _test1 for test .apk files.
-#   TIME_ZONE_DATA_APP_VERSION_CODE - the version code for the .apk.
-#   TIME_ZONE_DATA_APP_VERSION_NAME - the version name for the .apk.
 #
 
-OEM_APP_PATH := $(LOCAL_PATH)/..
-include $(OEM_APP_PATH)/build_oem_data_app.mk
+PREBUILT_PATH := $(LOCAL_PATH)/..
+
+# Turn off pre-opting. We want these to be installable.
+LOCAL_DEX_PREOPT := false
+
+# OEM-INSTRUCTION: Change this to match your OEM-specific test suite.
+# If a value is here the .apk will automatically be included in the associated
+# test suite build, e.g. if there is an oem-specific tradefed suite called "OTS",
+# then put ots here.
+# Required for the xTS TimeZoneUpdateHostTest to pass because it needs correctly
+# signed OEM-specific apks available to work.
+LOCAL_COMPATIBILITY_SUITE :=
+
+include $(PREBUILT_PATH)/include_app_prebuilt.mk
+
