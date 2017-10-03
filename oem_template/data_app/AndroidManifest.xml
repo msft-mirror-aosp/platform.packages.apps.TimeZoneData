@@ -14,8 +14,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  -->
+<!-- OEM-INSTRUCTION: Change the package attribute to something OEM-specific. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-          package="com.android.timezone.data.placeholder_for_aapt_override">
+          package="CHANGE">
+
+    <!--
+      OEM-INSTRUCTION: Change these to match the platform release the app is
+      for and update for every platform release to ensure the app is only
+      installed on the release it is targeted for. Typically, all values should
+      be the same unless two Android releases use the same distro format
+      version.
+
+      Your app version code strategy and the version of the app included in the
+      system image should be chosen to prevent older versions of the app being
+      installed on newer Android devices.
+      minSdkVersion will prevent newer versions of the app being installed on
+      older devices.
+      maxSdkVersion is not used by the device, but can be used by app stores to
+      prevent the app being shown to users of newer devices.
+      -->
+    <uses-sdk android:minSdkVersion="CHANGE"
+              android:targetSdkVersion="CHANGE"
+              android:maxSdkVersion="CHANGE" />
+
+    <!--
+      OEM-INSTRUCTION: Optionally restrict the app to an OEM-specific feature,
+      or remove the element entirely.
+      -->
+    <uses-feature
+            android:name="CHANGE"
+            android:required="true"/>
 
     <application
         android:allowBackup="false"
