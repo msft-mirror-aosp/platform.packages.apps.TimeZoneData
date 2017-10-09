@@ -32,16 +32,15 @@ LOCAL_STATIC_JAVA_LIBRARIES := time_zone_distro_provider
 # All resources come from the vendor-specific dirs.
 LOCAL_RESOURCE_DIR := $(OEM_APP_PATH)/res
 
-LOCAL_FULL_MANIFEST_FILE := packages/apps/TimeZoneData/manifests/install/AndroidManifest.xml
+# Ensure the app can be unbundled by only depending on System APIs.
+LOCAL_SDK_VERSION := system_current
+
+LOCAL_FULL_MANIFEST_FILE := $(OEM_APP_PATH)/AndroidManifest.xml
 
 LOCAL_PACKAGE_NAME := TimeZoneData$(TIME_ZONE_DATA_APP_SUFFIX)
 
 LOCAL_AAPT_FLAGS := --version-code $(TIME_ZONE_DATA_APP_VERSION_CODE) \
-                    --version-name $(TIME_ZONE_DATA_APP_VERSION_NAME) \
-                    --min-sdk-version $(PLATFORM_SDK_VERSION)
-
-# OEM-INSTRUCTION: Modify the name, s/oemcorp/<Your company name>/
-LOCAL_AAPT_FLAGS += --rename-manifest-package com.oemcorp.android.timezone.data
+                    --version-name $(TIME_ZONE_DATA_APP_VERSION_NAME)
 
 # OEM-INSTRUCTION: Modify the name, s/oemcorp/<Your company name>/
 LOCAL_MODULE_OWNER := oemcorp
@@ -50,6 +49,4 @@ LOCAL_PRIVILEGED_MODULE := true
 # OEM-INSTRUCTION: Configure your own certificate.
 LOCAL_CERTIFICATE :=
 
-# If LOCAL_COMPATIBILITY_SUITE is unset this is the same as BUILD_PACKAGE so
-# can be used for building test or production packages.
-include $(BUILD_CTS_PACKAGE)
+include $(BUILD_PACKAGE)
