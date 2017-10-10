@@ -258,8 +258,10 @@ public class TimeZoneUpdateHostTest extends DeviceTestCase implements IBuildRece
     }
 
     private void assertActiveRulesVersion(String expectedRulesVersion) throws Exception {
-        // Dumpsys reports the version reported by ICU and libcore, but they should always match.
-        String expectedActiveRulesVersion = expectedRulesVersion + "," + expectedRulesVersion;
+        // Dumpsys reports the version reported by ICU, ZoneInfoDB and TimeZoneFinder and they
+        // should always match.
+        String expectedActiveRulesVersion =
+                expectedRulesVersion + "," + expectedRulesVersion + "," + expectedRulesVersion;
 
         String actualActiveRulesVersion =
                 waitForNoOperationInProgressAndReturn(StateType.ACTIVE_RULES_VERSION);
