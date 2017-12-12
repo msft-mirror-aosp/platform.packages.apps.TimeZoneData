@@ -20,8 +20,6 @@ import com.android.timezone.distro.DistroException;
 import com.android.timezone.distro.DistroVersion;
 import com.android.timezone.distro.TimeZoneDistro;
 
-import android.annotation.NonNull;
-import android.annotation.Nullable;
 import android.content.ContentProvider;
 import android.content.ContentValues;
 import android.content.Context;
@@ -36,6 +34,8 @@ import android.os.ParcelFileDescriptor;
 import android.os.UserHandle;
 import android.provider.TimeZoneRulesDataContract;
 import android.provider.TimeZoneRulesDataContract.Operation;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 
 import java.io.File;
 import java.io.FileNotFoundException;
