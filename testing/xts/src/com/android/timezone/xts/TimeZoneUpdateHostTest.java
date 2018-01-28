@@ -159,7 +159,6 @@ public class TimeZoneUpdateHostTest implements IDeviceTest, IBuildReceiver {
                 break;
             }
             // Success, meaning there was an APK that could be uninstalled.
-
             // If there is a distro installed we need wait for the distro uninstall that should now
             // become staged.
             boolean distroIsInstalled = INSTALL_STATE_INSTALLED.equals(getCurrentInstallState());
@@ -172,6 +171,13 @@ public class TimeZoneUpdateHostTest implements IDeviceTest, IBuildReceiver {
                 waitForStagedUninstall();
 
                 rebootDeviceAndWaitForRestart();
+            } else {
+                // There was an apk installed, but no time zone distro was installed. It was
+                // probably a "bad" .apk that was rejected. The update app will request an uninstall
+                // anyway just to be sure, so we'll give it a chance to do that before continuing
+                // otherwise we could get an "operation in progress" later on when we're not
+                // expecting it.
+                Thread.sleep(10000);
             }
         }
         assertActiveRulesVersion(getSystemRulesVersion());
