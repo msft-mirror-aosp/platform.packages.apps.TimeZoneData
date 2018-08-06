@@ -151,24 +151,33 @@ public class TimeZoneUpdateHostTest implements IDeviceTest, IBuildReceiver {
         for (int i = 0; i < 2; i++) {
             logDeviceTimeZoneState();
 
+            // Even if there's no distro installed, there may be an updated APK installed, so try to
+            // remove it unconditionally.
             String errorCode = uninstallPackage(getTimeZoneDataPackageName());
             if (errorCode != null) {
                 // Failed to uninstall, which we take to mean the device is "clean".
                 break;
             }
-            // Success, meaning there was something that could be uninstalled, so we should wait
-            // for the device to react to the uninstall and reboot. If the time zone update system
-            // is not configured correctly this is likely to be where tests fail.
-
-            // If the package we uninstalled was not valid then there would be nothing installed and
-            // so nothing will be staged by the uninstall. Check and do what it takes to get the
-            // device to having nothing installed again.
-            if (INSTALL_STATE_INSTALLED.equals(getCurrentInstallState())) {
-                // We expect the device to get to the staged state "UNINSTALL", meaning it will try
-                // to revert to no distro installed on next boot.
+            // Success, meaning there was an APK that could be uninstalled.
+            // If there is a distro installed we need wait for the distro uninstall that should now
+            // become staged.
+            boolean distroIsInstalled = INSTALL_STATE_INSTALLED.equals(getCurrentInstallState());
+            if (distroIsInstalled) {
+                // It may take a short while before we can detect anything: the package manager
+                // should have triggered an intent, and the PackageTracker has to receive that and
+                // send its own intent, which then has to be acted on before we could detect an
+                // operation in progress. We expect the device eventually to get to the staged state
+                // "UNINSTALL", meaning it will try to revert to no distro installed on next boot.
                 waitForStagedUninstall();
 
                 rebootDeviceAndWaitForRestart();
+            } else {
+                // There was an apk installed, but no time zone distro was installed. It was
+                // probably a "bad" .apk that was rejected. The update app will request an uninstall
+                // anyway just to be sure, so we'll give it a chance to do that before continuing
+                // otherwise we could get an "operation in progress" later on when we're not
+                // expecting it.
+                Thread.sleep(10000);
             }
         }
         assertActiveRulesVersion(getSystemRulesVersion());
