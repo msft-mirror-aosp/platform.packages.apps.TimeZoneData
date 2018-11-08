@@ -49,6 +49,8 @@ LOCAL_MODULE_OWNER := oemcorp
 # the system image.
 LOCAL_UNINSTALLABLE_MODULE := true
 
+LOCAL_PRODUCT_MODULE := true
+
 # OEM-INSTRUCTION: Configure your own certificate.
 LOCAL_CERTIFICATE :=
 
