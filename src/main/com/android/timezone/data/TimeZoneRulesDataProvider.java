@@ -103,7 +103,7 @@ public final class TimeZoneRulesDataProvider extends ContentProvider {
                     + " instead user=" + currentUserHandle);
         }
 
-        // Confirm our security
+        // Sanity check our security
         if (!TimeZoneRulesDataContract.AUTHORITY.equals(info.authority)) {
             // The authority looked for by the time zone updater is fixed.
             throw new SecurityException(
